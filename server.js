@@ -22,41 +22,46 @@ mercadopago.configure({
   access_token: "APP_USR-3844650912716831-040313-d52df8a677925eae421301efd8bda6e7-527461417"
 });
 
-// 🔥 TESTE SERVER
+// 🔥 TESTE
 app.get("/", (req, res) => {
   res.send("Servidor rodando 🚀");
 });
 
-// 🔥 TIKTOK (MULTI USUÁRIO)
+// 🔥 TIKTOK
 const conexoes = {};
 
-// 🔥 CONECTAR TIKTOK
 app.post("/connect-tiktok", async (req, res) => {
-  const { username, uid } = req.body;
+  try {
+    const { username, uid } = req.body;
 
-  const tiktok = new WebcastPushConnection(username);
+    const tiktok = new WebcastPushConnection(username);
 
-  tiktok.connect().then(() => {
+    await tiktok.connect();
+
     console.log("✅ Conectado:", username);
-  });
 
-  tiktok.on("gift", async (data) => {
-    console.log("🎁", data.giftName);
+    tiktok.on("gift", async (data) => {
+      console.log("🎁", data.giftName);
 
-    await db.collection("eventos").add({
-      gift: data.giftName,
-      user: data.uniqueId,
-      dono: uid,
-      timestamp: Date.now()
+      await db.collection("eventos").add({
+        gift: data.giftName,
+        user: data.uniqueId,
+        dono: uid,
+        timestamp: Date.now()
+      });
     });
-  });
 
-  conexoes[uid] = tiktok;
+    conexoes[uid] = tiktok;
 
-  res.send({ status: "ok" });
+    res.send({ status: "ok" });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Erro ao conectar TikTok");
+  }
 });
 
-// 💰 CRIAR PAGAMENTO PIX
+// 💰 PAGAMENTO PIX
 app.post("/create-payment", async (req, res) => {
   try {
     const { uid } = req.body;
@@ -68,7 +73,7 @@ app.post("/create-payment", async (req, res) => {
       payer: {
         email: "teste@teste.com"
       },
-      notification_url: "https://SEU_BACKEND_URL/webhook", // ⚠️ IMPORTANTE
+      notification_url: "https://tiktok-server-434n.onrender.com/webhook", // 🔥 COLOCA SEU LINK AQUI
       metadata: {
         uid: uid
       }
@@ -87,9 +92,15 @@ app.post("/create-payment", async (req, res) => {
   }
 });
 
-// 🔥 WEBHOOK (LIBERA USUÁRIO AUTOMÁTICO)
+// 🔥 WEBHOOK
 app.post("/webhook", async (req, res) => {
   try {
+    console.log("🔥 WEBHOOK RECEBIDO");
+
+    if (!req.body || !req.body.data) {
+      return res.sendStatus(200);
+    }
+
     const paymentId = req.body.data.id;
 
     const result = await mercadopago.payment.findById(paymentId);
@@ -107,10 +118,10 @@ app.post("/webhook", async (req, res) => {
     res.sendStatus(200);
 
   } catch (err) {
-    console.log(err);
+    console.log("❌ ERRO WEBHOOK:", err);
     res.sendStatus(500);
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("🔥 Server rodando"));
+app.listen(PORT, () => console.log("🔥 Server rodando na porta " + PORT));
