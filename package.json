@@ -1,0 +1,9 @@
+{
+  "name": "tiktok-server",
+  "version": "1.0.0",
+  "main": "server.js",
+  "dependencies": {
+    "tiktok-live-connector": "^1.0.0",
+    "firebase-admin": "^11.0.0"
+  }
+}
