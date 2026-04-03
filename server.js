@@ -11,7 +11,7 @@ admin.initializeApp({
 const db = admin.firestore();
 
 // 🔥 MUDA AQUI PRO SEU @
-const username = "SEU_TIKTOK";
+const username = "horadeanimaia";
 
 const tiktok = new WebcastPushConnection(username);
 
