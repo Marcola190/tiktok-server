@@ -2,7 +2,6 @@ const express = require("express");
 const app = express();
 
 const admin = require("firebase-admin");
-
 const serviceAccount = require("./serviceAccountKey.json");
 
 admin.initializeApp({
@@ -13,12 +12,12 @@ const db = admin.firestore();
 
 app.use(express.json());
 
-// HOME
+// 🔥 HOME
 app.get("/", (req, res) => {
   res.send("Servidor rodando 🚀");
 });
 
-// 🔥 WEBHOOK
+// 🔥 WEBHOOK MERCADO PAGO
 app.post("/webhook", async (req, res) => {
 
   console.log("💰 PAGAMENTO RECEBIDO:");
@@ -26,25 +25,32 @@ app.post("/webhook", async (req, res) => {
 
   try {
 
-    // ⚠️ PEGAR ID DO PAGAMENTO
     const paymentId = req.body?.data?.id;
 
     if (!paymentId) {
       return res.sendStatus(200);
     }
 
-    // 👉 SIMULAÇÃO (depois podemos melhorar)
-    // Como Mercado Pago não manda email direto aqui,
-    // vamos usar fallback manual por enquanto
+    // ⚠️ COMO NÃO TEM EMAIL AQUI
+    // vamos liberar TEMPORÁRIO pra todos logados
 
-    console.log("Pagamento ID:", paymentId);
+    const snapshot = await db.collection("users").get();
 
-    // 🔥 AQUI VOCÊ PODE FUTURAMENTE CONSULTAR API DO MP
+    const tempo = 1 * 24 * 60 * 60 * 1000; // 1 DIA
+
+    snapshot.forEach(async (doc) => {
+      await db.collection("users").doc(doc.id).set({
+        expira: Date.now() + tempo,
+        plano: "auto"
+      }, { merge: true });
+    });
+
+    console.log("🔥 ACESSO LIBERADO AUTOMATICAMENTE (1 DIA)");
 
     res.sendStatus(200);
 
   } catch (err) {
-    console.error(err);
+    console.error("ERRO:", err);
     res.sendStatus(500);
   }
 
