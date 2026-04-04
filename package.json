@@ -10,6 +10,7 @@
     "mercadopago": "^1.5.13",
     "firebase-admin": "^11.0.0",
     "tiktok-live-connector": "^1.0.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "axios": "^1.6.0"
   }
 }
