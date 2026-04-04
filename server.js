@@ -46,9 +46,7 @@ app.post("/webhook", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    let email =
-      pagamento.payer?.email ||
-      pagamento.additional_info?.payer?.email;
+    const email = pagamento.payer?.email;
 
     console.log("EMAIL:", email);
 
@@ -57,10 +55,8 @@ app.post("/webhook", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    const tempo = 24 * 60 * 60 * 1000;
-
     await db.collection("users").doc(email).set({
-      expira: Date.now() + tempo
+      expira: Date.now() + (24 * 60 * 60 * 1000)
     }, { merge: true });
 
     console.log("🔥 LIBERADO:", email);
@@ -68,12 +64,12 @@ app.post("/webhook", async (req, res) => {
     res.sendStatus(200);
 
   } catch (err) {
-    console.error("ERRO:", err.response?.data || err.message);
+    console.error("ERRO:", err.message);
     res.sendStatus(500);
   }
 
 });
 
 app.listen(10000, () => {
-  console.log("Servidor rodando");
+  console.log("Servidor rodando na porta 10000");
 });
