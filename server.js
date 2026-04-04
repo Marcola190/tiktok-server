@@ -1,4 +1,5 @@
 const express = require("express");
+const axios = require("axios");
 const app = express();
 
 const admin = require("firebase-admin");
@@ -11,6 +12,9 @@ admin.initializeApp({
 const db = admin.firestore();
 
 app.use(express.json());
+
+// 🔑 COLOCA SEU TOKEN AQUI
+const MP_TOKEN = "APP_USR-3844650912716831-040313-d52df8a677925eae421301efd8bda6e7-527461417";
 
 // 🔥 HOME
 app.get("/", (req, res) => {
@@ -31,26 +35,42 @@ app.post("/webhook", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // ⚠️ COMO NÃO TEM EMAIL AQUI
-    // vamos liberar TEMPORÁRIO pra todos logados
+    // 🔥 BUSCA DETALHES DO PAGAMENTO NO MERCADO PAGO
+    const response = await axios.get(
+      `https://api.mercadopago.com/v1/payments/${paymentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${MP_TOKEN}`
+        }
+      }
+    );
 
-    const snapshot = await db.collection("users").get();
+    const payment = response.data;
 
-    const tempo = 1 * 24 * 60 * 60 * 1000; // 1 DIA
+    console.log("🔎 DETALHES:", payment);
 
-    snapshot.forEach(async (doc) => {
-      await db.collection("users").doc(doc.id).set({
-        expira: Date.now() + tempo,
-        plano: "auto"
-      }, { merge: true });
-    });
+    // ✅ PEGA EMAIL DO COMPRADOR
+    const email = payment?.payer?.email;
 
-    console.log("🔥 ACESSO LIBERADO AUTOMATICAMENTE (1 DIA)");
+    if (!email) {
+      console.log("❌ EMAIL NÃO ENCONTRADO");
+      return res.sendStatus(200);
+    }
+
+    // ⏱️ LIBERA 1 DIA AUTOMÁTICO
+    const tempo = 1 * 24 * 60 * 60 * 1000;
+
+    await db.collection("users").doc(email).set({
+      expira: Date.now() + tempo,
+      plano: "auto"
+    }, { merge: true });
+
+    console.log("🔥 LIBERADO PARA:", email);
 
     res.sendStatus(200);
 
   } catch (err) {
-    console.error("ERRO:", err);
+    console.error("ERRO:", err.response?.data || err.message);
     res.sendStatus(500);
   }
 
